@@ -50,18 +50,25 @@ pre_encode(Data, Config) ->
 encode(Data) ->
   jsx:encode(Data).
 
-jsonify(A) when is_atom(A)    -> A;
-jsonify(B) when is_binary(B)  -> B;
-jsonify(I) when is_integer(I) -> I;
-jsonify(F) when is_float(F)   -> F;
-jsonify(B) when is_boolean(B) -> B;
-jsonify(L) when is_list(L)    ->
+jsonify(A) when is_atom(A)     -> A;
+jsonify(B) when is_binary(B)   -> B;
+jsonify(I) when is_integer(I)  -> I;
+jsonify(F) when is_float(F)    -> F;
+jsonify(B) when is_boolean(B)  -> B;
+jsonify(P) when is_pid(P)      -> jsonify(pid_to_list(P));
+jsonify(P) when is_port(P)     -> jsonify(port_to_list(P));
+jsonify(F) when is_function(F) -> jsonify(erlang:fun_to_list(F));
+jsonify(L) when is_list(L)     ->
   try list_to_binary(L) of
     S -> S
   catch error:badarg ->
     term_to_binary(L)
   end;
-jsonify(Any)                  -> term_to_binary(Any).
+jsonify({M, F, A}) when is_atom(M), is_atom(F), is_integer(A) ->
+  <<(a2b(M))/binary,$:,(a2b(F))/binary,$/,(integer_to_binary(A))/binary>>;
+jsonify(Any)                   -> term_to_binary(Any).
+
+a2b(A) -> atom_to_binary(A, utf8).
 
 %%%_* Tests ============================================================
 -ifdef(TEST).

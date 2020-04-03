@@ -29,8 +29,7 @@ This project should be added as a dependency to your project
 
 ```
 > logger:info(#{a => b}).
-{"a":"b","gl":"�gd\u0000\rnonode@nohost\u0000\u0000\u0000�\u0000\u0000\u0000\u0000\u0000","level":"info","pid":"�gd\u0000\rnonode@nohost\u0000\u0000\u0000�\u0000\u0000\u0000\u0000\u0000","report_cb":"�qd\u0000\u0006loggerd\u0000\u0011format_otp_reporta\u0001","time":1585900670785792}ok
-until finished
+{"a":"b","gl":"<0.178.0>","level":"info","pid":"<0.182.0>","report_cb":"fun logger:format_otp_report/1","time":1585902924341139}ok
 ```
 
 ## Running the tests
