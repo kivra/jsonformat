@@ -24,13 +24,11 @@
 %%%_* Exports ==========================================================
 -export([format/2]).
 
-%%%_* Macros ===========================================================
-
 %%%_* Code =============================================================
 %%%_ * API -------------------------------------------------------------
 -spec format(logger:log_event(), logger:formatter_config()) -> unicode:chardata().
 format(#{level:=Level, msg:={report, Msg}, meta:=Meta}, Config) when is_map(Msg) ->
-  encode(Msg, maps:put(level, Level, Meta), Config);
+  encode(pre_encode(maps:merge(Msg, maps:put(level, Level, Meta)), Config));
 format(Map = #{msg := {report, KeyVal}}, Config) when is_list(KeyVal) ->
   format(Map#{msg := {report, maps:from_list(KeyVal)}}, Config);
 format(Map = #{msg := {string, String}}, Config) ->
@@ -39,14 +37,42 @@ format(Map = #{msg := {Format, Terms}}, Config) ->
   format(Map#{msg := {string, io_lib:format(Format, Terms)}}, Config).
 
 %%%_* Private functions ================================================
-encode(Msg, Meta, Config) ->
-  jsx:encode(maps:merge(Msg, Meta), maps:to_list(Config)).
+pre_encode(Data, Config) ->
+  maps:fold(
+    fun(K, V, Acc) when is_map(V) ->
+      maps:put(jsonify(K), pre_encode(V, Config), Acc);
+       (K, V, Acc) ->
+      maps:put(jsonify(K), jsonify(V), Acc)
+    end,
+    maps:new(),
+    Data).
+
+encode(Data) ->
+  jsx:encode(Data).
+
+jsonify(A) when is_atom(A)    -> A;
+jsonify(B) when is_binary(B)  -> B;
+jsonify(I) when is_integer(I) -> I;
+jsonify(F) when is_float(F)   -> F;
+jsonify(B) when is_boolean(B) -> B;
+jsonify(L) when is_list(L)    ->
+  try list_to_binary(L) of
+    S -> S
+  catch error:badarg ->
+    term_to_binary(L)
+  end;
+jsonify(Any)                  -> term_to_binary(Any).
 
 %%%_* Tests ============================================================
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
-hash_32_test() ->
+format_test() ->
+  ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\"}">>
+              , format(#{ level => info
+                        , msg   => {report,#{label => {supervisor,prog}}
+                        , meta => #{}
+                        }, #{}) ),
   ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\"}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{}) ),
   ?assertEqual( <<"{\"herp\":\"derp\",\"level\":\"alert\"}">>
