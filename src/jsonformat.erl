@@ -62,11 +62,11 @@ jsonify(L) when is_list(L)     ->
   try list_to_binary(L) of
     S -> S
   catch error:badarg ->
-    term_to_binary(L)
+    unicode:characters_to_binary(io_lib:format("~w", [L]))
   end;
 jsonify({M, F, A}) when is_atom(M), is_atom(F), is_integer(A) ->
   <<(a2b(M))/binary,$:,(a2b(F))/binary,$/,(integer_to_binary(A))/binary>>;
-jsonify(Any)                   -> term_to_binary(Any).
+jsonify(Any)                   -> unicode:characters_to_binary(io_lib:format("~w", [Any])).
 
 a2b(A) -> atom_to_binary(A, utf8).
 
@@ -75,11 +75,6 @@ a2b(A) -> atom_to_binary(A, utf8).
 -include_lib("eunit/include/eunit.hrl").
 
 format_test() ->
-  ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\"}">>
-              , format(#{ level => info
-                        , msg   => {report,#{label => {supervisor,prog}}
-                        , meta => #{}
-                        }, #{}) ),
   ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\"}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{}) ),
   ?assertEqual( <<"{\"herp\":\"derp\",\"level\":\"alert\"}">>
