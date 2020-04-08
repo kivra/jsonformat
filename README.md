@@ -1,4 +1,4 @@
-# Project Title
+# jsonformat
 
 A custom formatter for Erlang OTP logger that outputs JSON using `jsx`
 
