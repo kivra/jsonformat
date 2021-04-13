@@ -12,7 +12,6 @@ This project should be added as a dependency to your project
 
 ```erlang
 [ { kernel
-  , {logger_level, info}
   , [ { logger
       ,[ { handler
          , default
@@ -20,6 +19,7 @@ This project should be added as a dependency to your project
          , #{formatter => {jsonformat, #{}}}
          }
        ] }
+    , {logger_level, info}
    ] }
 ].
 
