@@ -20,6 +20,7 @@
   , {registered,   []}
   , {applications, [ kernel
                    , stdlib
+                   , jsx
                    ]}
   , {licenses,     ["MIT"]}
   , {links,        [{"Github", "https://github.com/kivra/jsonformat/"}]}
