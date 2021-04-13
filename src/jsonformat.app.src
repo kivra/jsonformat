@@ -15,7 +15,7 @@
 {application, jsonformat,
   [ {description,  "A custom formatter for the erlang logger applications that "
                    "outputs JSON formatted single line logs"}
-  , {vsn,           "0.0.1"}
+  , {vsn,           "1.0.1"}
   , {modules,      []}
   , {registered,   []}
   , {applications, [ kernel
