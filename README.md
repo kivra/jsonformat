@@ -16,7 +16,7 @@ This project should be added as a dependency to your project
       ,[ { handler
          , default
          , logger_std_h
-         , #{formatter => {jsonformat, #{}}}
+         , #{formatter => {jsonformat, #{new_line => true}}}
          }
        ] }
     , {logger_level, info}
