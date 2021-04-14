@@ -27,8 +27,10 @@
 %%%_* Code =============================================================
 %%%_ * API -------------------------------------------------------------
 -spec format(logger:log_event(), logger:formatter_config()) -> unicode:chardata().
+format(#{msg:={report, #{format:=Format, args:=Args, label:={error_logger, _}}}} = Map, Config) ->
+  format(Map#{msg := {report, #{text => io_lib:format(Format, Args)}}}, Config);
 format(#{level:=Level, msg:={report, Msg}, meta:=Meta}, Config) when is_map(Msg) ->
-  encode(pre_encode(maps:merge(Msg, maps:put(level, Level, Meta)), Config));
+  encode(pre_encode(maps:merge(Msg, maps:put(level, Level, Meta)), Config), Config);
 format(Map = #{msg := {report, KeyVal}}, Config) when is_list(KeyVal) ->
   format(Map#{msg := {report, maps:from_list(KeyVal)}}, Config);
 format(Map = #{msg := {string, String}}, Config) ->
@@ -47,8 +49,12 @@ pre_encode(Data, Config) ->
     maps:new(),
     Data).
 
-encode(Data) ->
-  jsx:encode(Data).
+encode(Data, Config) ->
+  Json = jsx:encode(Data),
+  case maps:get(new_line, Config, false) of
+    true -> [Json, <<"\n">>];
+    false -> Json
+  end.
 
 jsonify(A) when is_atom(A)     -> A;
 jsonify(B) when is_binary(B)   -> B;
