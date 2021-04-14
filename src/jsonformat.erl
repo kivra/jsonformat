@@ -24,17 +24,24 @@
 %%%_* Exports ==========================================================
 -export([format/2]).
 
+%%%_* Macros ===========================================================
+%%%_* Options ----------------------------------------------------------
+-define(NEW_LINE, false).
+-define(OUTPUT_KEY, text).
+
 %%%_* Code =============================================================
 %%%_ * API -------------------------------------------------------------
 -spec format(logger:log_event(), logger:formatter_config()) -> unicode:chardata().
 format(#{msg:={report, #{format:=Format, args:=Args, label:={error_logger, _}}}} = Map, Config) ->
-  format(Map#{msg := {report, #{text => io_lib:format(Format, Args)}}}, Config);
+  Report = #{output_key(Config) => io_lib:format(Format, Args)},
+  format(Map#{msg := {report, Report}}, Config);
 format(#{level:=Level, msg:={report, Msg}, meta:=Meta}, Config) when is_map(Msg) ->
   encode(pre_encode(maps:merge(Msg, maps:put(level, Level, Meta)), Config), Config);
 format(Map = #{msg := {report, KeyVal}}, Config) when is_list(KeyVal) ->
   format(Map#{msg := {report, maps:from_list(KeyVal)}}, Config);
 format(Map = #{msg := {string, String}}, Config) ->
-  format(Map#{msg := {report, #{text => unicode:characters_to_binary(String)}}}, Config);
+  Report = #{output_key(Config) => unicode:characters_to_binary(String)},
+  format(Map#{msg := {report, Report}}, Config);
 format(Map = #{msg := {Format, Terms}}, Config) ->
   format(Map#{msg := {string, io_lib:format(Format, Terms)}}, Config).
 
@@ -51,7 +58,7 @@ pre_encode(Data, Config) ->
 
 encode(Data, Config) ->
   Json = jsx:encode(Data),
-  case maps:get(new_line, Config, false) of
+  case new_line(Config) of
     true -> [Json, <<"\n">>];
     false -> Json
   end.
@@ -76,6 +83,10 @@ jsonify(Any)                   -> unicode:characters_to_binary(io_lib:format("~w
 
 a2b(A) -> atom_to_binary(A, utf8).
 
+new_line(Config)   -> maps:get(new_line, Config, ?NEW_LINE).
+
+output_key(Config) -> maps:get(output_key, Config, ?OUTPUT_KEY).
+
 %%%_* Tests ============================================================
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
@@ -84,7 +95,9 @@ format_test() ->
   ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\"}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{}) ),
   ?assertEqual( <<"{\"herp\":\"derp\",\"level\":\"alert\"}">>
-              , format(#{level => alert, msg => {report, #{herp => derp}}, meta => #{}}, #{}) ).
+              , format(#{level => alert, msg => {report, #{herp => derp}}, meta => #{}}, #{}) ),
+  ?assertEqual( <<"{\"level\":\"alert\",\"message\":\"derp\"}">>
+              , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{output_key => message}) ).
 
 -endif.
 
