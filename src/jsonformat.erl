@@ -42,9 +42,8 @@
 format(#{msg:={report, #{format:=Format, args:=Args, label:={error_logger, _}}}} = Map, Config) ->
   Report = #{text_output_key(Config) => io_lib:format(Format, Args)},
   format(Map#{msg := {report, Report}}, Config);
-format(#{level:=Level, msg:={report, Msg}, meta:=Meta0}, Config) when is_map(Msg) ->
-  Meta1 = maps:put(level, Level, Meta0),
-  Data0 = maps:merge(Msg, Meta1),
+format(#{level:=Level, msg:={report, Msg}, meta:=Meta}, Config) when is_map(Msg) ->
+  Data0 = maps:merge(Msg, Meta#{level => Level}),
   Data1 = format_data(Data0, Config),
   encode(pre_encode(Data1, Config), Config);
 format(Map = #{msg := {report, KeyVal}}, Config) when is_list(KeyVal) ->
