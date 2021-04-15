@@ -24,6 +24,13 @@
 %%%_* Exports ==========================================================
 -export([format/2]).
 
+%%%_* Types ============================================================
+-type config() :: #{ new_line => boolean()
+                   , text_output_key => atom()
+                   , format_funs => #{atom() => fun((_) -> _)}}.
+
+-export_type([config/0]).
+
 %%%_* Macros ===========================================================
 %%%_* Options ----------------------------------------------------------
 -define(NEW_LINE, false).
@@ -31,12 +38,15 @@
 
 %%%_* Code =============================================================
 %%%_ * API -------------------------------------------------------------
--spec format(logger:log_event(), logger:formatter_config()) -> unicode:chardata().
+-spec format(logger:log_event(), config()) -> unicode:chardata().
 format(#{msg:={report, #{format:=Format, args:=Args, label:={error_logger, _}}}} = Map, Config) ->
   Report = #{text_output_key(Config) => io_lib:format(Format, Args)},
   format(Map#{msg := {report, Report}}, Config);
-format(#{level:=Level, msg:={report, Msg}, meta:=Meta}, Config) when is_map(Msg) ->
-  encode(pre_encode(maps:merge(Msg, maps:put(level, Level, Meta)), Config), Config);
+format(#{level:=Level, msg:={report, Msg}, meta:=Meta0}, Config) when is_map(Msg) ->
+  Meta1 = maps:put(level, Level, Meta0),
+  Data0 = maps:merge(Msg, Meta1),
+  Data1 = format_data(Data0, Config),
+  encode(pre_encode(Data1, Config), Config);
 format(Map = #{msg := {report, KeyVal}}, Config) when is_list(KeyVal) ->
   format(Map#{msg := {report, maps:from_list(KeyVal)}}, Config);
 format(Map = #{msg := {string, String}}, Config) ->
@@ -83,7 +93,14 @@ jsonify(Any)                   -> unicode:characters_to_binary(io_lib:format("~w
 
 a2b(A) -> atom_to_binary(A, utf8).
 
-new_line(Config)        -> maps:get(new_line, Config, ?NEW_LINE).
+format_data(Data, #{format_funs := Callbacks}) ->
+  maps:fold(fun(K, Fun, Acc) when is_map_key(K, Data) -> maps:update_with(K, Fun, Acc);
+               (_, _, Acc)                            -> Acc
+            end, Data, Callbacks);
+format_data(Data, _) ->
+  Data.
+
+new_line(Config) -> maps:get(new_line, Config, ?NEW_LINE).
 
 text_output_key(Config) -> maps:get(text_output_key, Config, ?TEXT_OUTPUT_KEY).
 
@@ -98,6 +115,12 @@ format_test() ->
               , format(#{level => alert, msg => {report, #{herp => derp}}, meta => #{}}, #{}) ),
   ?assertEqual( <<"{\"level\":\"alert\",\"message\":\"derp\"}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{text_output_key => message}) ).
+
+format_funs_test() ->
+  Config1 = #{format_funs => #{ time  => fun(Epoch) -> Epoch + 1 end
+                              , level => fun(alert) -> info      end}},
+  ?assertEqual( <<"{\"level\":\"info\",\"text\":\"derp\",\"time\":2}">>
+              , format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config1)).
 
 -endif.
 
