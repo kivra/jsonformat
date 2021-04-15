@@ -27,20 +27,20 @@
 %%%_* Macros ===========================================================
 %%%_* Options ----------------------------------------------------------
 -define(NEW_LINE, false).
--define(OUTPUT_KEY, text).
+-define(TEXT_OUTPUT_KEY, text).
 
 %%%_* Code =============================================================
 %%%_ * API -------------------------------------------------------------
 -spec format(logger:log_event(), logger:formatter_config()) -> unicode:chardata().
 format(#{msg:={report, #{format:=Format, args:=Args, label:={error_logger, _}}}} = Map, Config) ->
-  Report = #{output_key(Config) => io_lib:format(Format, Args)},
+  Report = #{text_output_key(Config) => io_lib:format(Format, Args)},
   format(Map#{msg := {report, Report}}, Config);
 format(#{level:=Level, msg:={report, Msg}, meta:=Meta}, Config) when is_map(Msg) ->
   encode(pre_encode(maps:merge(Msg, maps:put(level, Level, Meta)), Config), Config);
 format(Map = #{msg := {report, KeyVal}}, Config) when is_list(KeyVal) ->
   format(Map#{msg := {report, maps:from_list(KeyVal)}}, Config);
 format(Map = #{msg := {string, String}}, Config) ->
-  Report = #{output_key(Config) => unicode:characters_to_binary(String)},
+  Report = #{text_output_key(Config) => unicode:characters_to_binary(String)},
   format(Map#{msg := {report, Report}}, Config);
 format(Map = #{msg := {Format, Terms}}, Config) ->
   format(Map#{msg := {string, io_lib:format(Format, Terms)}}, Config).
@@ -83,9 +83,9 @@ jsonify(Any)                   -> unicode:characters_to_binary(io_lib:format("~w
 
 a2b(A) -> atom_to_binary(A, utf8).
 
-new_line(Config)   -> maps:get(new_line, Config, ?NEW_LINE).
+new_line(Config)        -> maps:get(new_line, Config, ?NEW_LINE).
 
-output_key(Config) -> maps:get(output_key, Config, ?OUTPUT_KEY).
+text_output_key(Config) -> maps:get(text_output_key, Config, ?TEXT_OUTPUT_KEY).
 
 %%%_* Tests ============================================================
 -ifdef(TEST).
@@ -97,7 +97,7 @@ format_test() ->
   ?assertEqual( <<"{\"herp\":\"derp\",\"level\":\"alert\"}">>
               , format(#{level => alert, msg => {report, #{herp => derp}}, meta => #{}}, #{}) ),
   ?assertEqual( <<"{\"level\":\"alert\",\"message\":\"derp\"}">>
-              , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{output_key => message}) ).
+              , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{text_output_key => message}) ).
 
 -endif.
 
