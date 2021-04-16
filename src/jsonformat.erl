@@ -26,7 +26,7 @@
 
 %%%_* Types ============================================================
 -type config() :: #{ new_line => boolean()
-                   , text_output_key => atom()
+                   , key_mapping => #{atom() => atom()}
                    , format_funs => #{atom() => fun((_) -> _)}}.
 
 -export_type([config/0]).
@@ -34,22 +34,22 @@
 %%%_* Macros ===========================================================
 %%%_* Options ----------------------------------------------------------
 -define(NEW_LINE, false).
--define(TEXT_OUTPUT_KEY, text).
 
 %%%_* Code =============================================================
 %%%_ * API -------------------------------------------------------------
 -spec format(logger:log_event(), config()) -> unicode:chardata().
 format(#{msg:={report, #{format:=Format, args:=Args, label:={error_logger, _}}}} = Map, Config) ->
-  Report = #{text_output_key(Config) => io_lib:format(Format, Args)},
+  Report = #{text => io_lib:format(Format, Args)},
   format(Map#{msg := {report, Report}}, Config);
 format(#{level:=Level, msg:={report, Msg}, meta:=Meta}, Config) when is_map(Msg) ->
   Data0 = maps:merge(Msg, Meta#{level => Level}),
-  Data1 = format_data(Data0, Config),
-  encode(pre_encode(Data1, Config), Config);
+  Data1 = apply_key_mapping(Data0, Config),
+  Data2 = format_data(Data1, Config),
+  encode(pre_encode(Data2, Config), Config);
 format(Map = #{msg := {report, KeyVal}}, Config) when is_list(KeyVal) ->
   format(Map#{msg := {report, maps:from_list(KeyVal)}}, Config);
 format(Map = #{msg := {string, String}}, Config) ->
-  Report = #{text_output_key(Config) => unicode:characters_to_binary(String)},
+  Report = #{text => unicode:characters_to_binary(String)},
   format(Map#{msg := {report, Report}}, Config);
 format(Map = #{msg := {Format, Terms}}, Config) ->
   format(Map#{msg := {string, io_lib:format(Format, Terms)}}, Config).
@@ -99,9 +99,17 @@ format_data(Data, #{format_funs := Callbacks}) ->
 format_data(Data, _) ->
   Data.
 
-new_line(Config) -> maps:get(new_line, Config, ?NEW_LINE).
+apply_key_mapping(Data, #{key_mapping := Mapping}) ->
+  DataOnlyMapped = 
+    maps:fold(fun(K, V, Acc) when is_map_key(K, Data) -> Acc#{V => maps:get(K, Data)};
+                 (_, _, Acc)                          -> Acc
+              end, #{}, Mapping),
+  DataNoMapped = maps:without(maps:keys(Mapping), Data),
+  maps:merge(DataNoMapped, DataOnlyMapped);
+apply_key_mapping(Data, _) ->
+  Data.
 
-text_output_key(Config) -> maps:get(text_output_key, Config, ?TEXT_OUTPUT_KEY).
+new_line(Config) -> maps:get(new_line, Config, ?NEW_LINE).
 
 %%%_* Tests ============================================================
 -ifdef(TEST).
@@ -111,16 +119,40 @@ format_test() ->
   ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\"}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{}) ),
   ?assertEqual( <<"{\"herp\":\"derp\",\"level\":\"alert\"}">>
-              , format(#{level => alert, msg => {report, #{herp => derp}}, meta => #{}}, #{}) ),
-  ?assertEqual( <<"{\"level\":\"alert\",\"message\":\"derp\"}">>
-              , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{text_output_key => message}) ).
+              , format(#{level => alert, msg => {report, #{herp => derp}}, meta => #{}}, #{}) ).
 
 format_funs_test() ->
   Config1 = #{format_funs => #{ time  => fun(Epoch) -> Epoch + 1 end
                               , level => fun(alert) -> info      end}},
   ?assertEqual( <<"{\"level\":\"info\",\"text\":\"derp\",\"time\":2}">>
-              , format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config1)).
+              , format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config1)),
 
+  Config2 = #{format_funs => #{ time  => fun(Epoch) -> Epoch + 1 end
+                              , foobar => fun(alert) -> info      end}},
+  ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\",\"time\":2}">>
+              , format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config2)).
+
+key_mapping_test() ->
+  Config1 = #{key_mapping => #{ level => lvl
+                              , text => message}},
+  ?assertEqual( <<"{\"lvl\":\"alert\",\"message\":\"derp\"}">>
+              , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config1)),
+  
+  Config2 = #{key_mapping => #{ level => lvl
+                              , text => level}},
+  ?assertEqual( <<"{\"level\":\"derp\",\"lvl\":\"alert\"}">>
+              , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config2)),
+
+  Config3 = #{key_mapping => #{ level => lvl
+                              , foobar => level}},
+  ?assertEqual( <<"{\"lvl\":\"alert\",\"text\":\"derp\"}">>
+              , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config3)),
+  
+  Config4 = #{ key_mapping => #{time => timestamp}
+             , format_funs => #{timestamp => fun(T) -> T + 1 end}},
+  ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\",\"timestamp\":2}">>
+              , format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config4)).
+           
 -endif.
 
 %%%_* Emacs ============================================================
