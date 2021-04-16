@@ -44,7 +44,7 @@ format(#{msg:={report, #{format:=Format, args:=Args, label:={error_logger, _}}}}
 format(#{level:=Level, msg:={report, Msg}, meta:=Meta}, Config) when is_map(Msg) ->
   Data0 = maps:merge(Msg, Meta#{level => Level}),
   Data1 = apply_key_mapping(Data0, Config),
-  Data2 = format_data(Data1, Config),
+  Data2 = apply_format_funs(Data1, Config),
   encode(pre_encode(Data2, Config), Config);
 format(Map = #{msg := {report, KeyVal}}, Config) when is_list(KeyVal) ->
   format(Map#{msg := {report, maps:from_list(KeyVal)}}, Config);
@@ -92,11 +92,11 @@ jsonify(Any)                   -> unicode:characters_to_binary(io_lib:format("~w
 
 a2b(A) -> atom_to_binary(A, utf8).
 
-format_data(Data, #{format_funs := Callbacks}) ->
+apply_format_funs(Data, #{format_funs := Callbacks}) ->
   maps:fold(fun(K, Fun, Acc) when is_map_key(K, Data) -> maps:update_with(K, Fun, Acc);
                (_, _, Acc)                            -> Acc
             end, Data, Callbacks);
-format_data(Data, _) ->
+apply_format_funs(Data, _) ->
   Data.
 
 apply_key_mapping(Data, #{key_mapping := Mapping}) ->
