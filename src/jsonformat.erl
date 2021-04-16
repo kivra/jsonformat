@@ -100,12 +100,12 @@ apply_format_funs(Data, _) ->
   Data.
 
 apply_key_mapping(Data, #{key_mapping := Mapping}) ->
-  DataOnlyMapped = 
-    maps:fold(fun(K, V, Acc) when is_map_key(K, Data) -> Acc#{V => maps:get(K, Data)};
-                 (_, _, Acc)                          -> Acc
-              end, #{}, Mapping),
-  DataNoMapped = maps:without(maps:keys(Mapping), Data),
-  maps:merge(DataNoMapped, DataOnlyMapped);
+  maps:fold(fun(Key, NewKey, Acc0) ->
+                case maps:take(Key, Acc0) of
+                  {Val, Acc} -> Acc#{NewKey => Val};
+                  error -> Acc0
+                end
+            end, Data, Mapping);
 apply_key_mapping(Data, _) ->
   Data.
 
