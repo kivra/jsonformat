@@ -84,7 +84,7 @@ jsonify(L) when is_list(L)     ->
   try list_to_binary(L) of
     S -> S
   catch error:badarg ->
-    unicode:characters_to_binary(io_lib:format("~w", [L]))
+    unicode:characters_to_binary(io_lib:format("~0p", [L]))
   end;
 jsonify({M, F, A}) when is_atom(M), is_atom(F), is_integer(A) ->
   <<(a2b(M))/binary,$:,(a2b(F))/binary,$/,(integer_to_binary(A))/binary>>;
@@ -137,7 +137,7 @@ key_mapping_test() ->
                               , text => message}},
   ?assertEqual( <<"{\"lvl\":\"alert\",\"message\":\"derp\"}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config1)),
-  
+
   Config2 = #{key_mapping => #{ level => lvl
                               , text => level}},
   ?assertEqual( <<"{\"level\":\"derp\",\"lvl\":\"alert\"}">>
@@ -147,12 +147,20 @@ key_mapping_test() ->
                               , foobar => level}},
   ?assertEqual( <<"{\"lvl\":\"alert\",\"text\":\"derp\"}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config3)),
-  
+
   Config4 = #{ key_mapping => #{time => timestamp}
              , format_funs => #{timestamp => fun(T) -> T + 1 end}},
   ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\",\"timestamp\":2}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config4)).
-           
+
+list_format_test() ->
+    ErrorReport =
+        #{level => error,
+          meta => #{time => 1},
+          msg => {report,#{report => [{hej,"hopp"}]}}},
+    ?assertEqual( <<"{\"level\":\"error\",\"report\":\"[{hej,\\\"hopp\\\"}]\",\"time\":1}">>
+                , format(ErrorReport, #{})).
+
 -endif.
 
 %%%_* Emacs ============================================================
