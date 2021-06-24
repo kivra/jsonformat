@@ -88,7 +88,7 @@ jsonify(L) when is_list(L)     ->
   end;
 jsonify({M, F, A}) when is_atom(M), is_atom(F), is_integer(A) ->
   <<(a2b(M))/binary,$:,(a2b(F))/binary,$/,(integer_to_binary(A))/binary>>;
-jsonify(Any)                   -> unicode:characters_to_binary(io_lib:format("~w", [Any])).
+jsonify(Any)                   -> unicode:characters_to_binary(io_lib:format("~0p", [Any])).
 
 a2b(A) -> atom_to_binary(A, utf8).
 
