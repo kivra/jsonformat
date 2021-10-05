@@ -53,9 +53,7 @@ format(Map = #{msg := {string, String}}, Config) ->
   Report = #{text => unicode:characters_to_binary(String)},
   format(Map#{msg := {report, Report}}, Config);
 format(Map = #{msg := {Format, Terms}}, Config) ->
-  format(Map#{msg := {string, io_lib:format(Format, Terms)}}, Config);
-format(Unknown, Config) ->
-  erlang:display({Unknown, Config}).
+  format(Map#{msg := {string, io_lib:format(Format, Terms)}}, Config).
 
 %%% Useful for converting logger:timestamp() to a readable timestamp.
 -spec system_time_to_iso8601(integer()) -> binary().
@@ -64,7 +62,7 @@ system_time_to_iso8601(Epoch) ->
 
 -spec system_time_to_iso8601(integer(), erlang:time_unit()) -> binary().
 system_time_to_iso8601(Epoch, Unit) ->
-  calendar:system_time_to_rfc3339(Epoch, [{unit, Unit}]).
+  calendar:system_time_to_rfc3339(Epoch, [{unit, Unit}, {offset, "Z"}]).
 
 %%%_* Private functions ================================================
 pre_encode(Data, Config) ->
