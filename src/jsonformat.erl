@@ -69,6 +69,8 @@ pre_encode(Data, Config) ->
   maps:fold(
     fun(K, V, Acc) when is_map(V) ->
       maps:put(jsonify(K), pre_encode(V, Config), Acc);
+       (K, Vs, Acc) when is_list(Vs), is_map(hd(Vs)) -> % assume list of maps
+      maps:put(jsonify(K), [pre_encode(V, Config) || V <- Vs], Acc);
        (K, V, Acc) ->
       maps:put(jsonify(K), jsonify(V), Acc)
     end,
