@@ -43,7 +43,7 @@ format(#{msg:={report, #{format:=Format, args:=Args, label:={error_logger, _}}}}
   Report = #{text => io_lib:format(Format, Args)},
   format(Map#{msg := {report, Report}}, Config);
 format(#{level:=Level, msg:={report, Msg}, meta:=Meta}, Config) when is_map(Msg) ->
-  Data0 = maps:merge(Msg, Meta#{level => Level}),
+  Data0 = merge_meta(Msg, Meta#{level => Level}, Config),
   Data1 = apply_key_mapping(Data0, Config),
   Data2 = apply_format_funs(Data1, Config),
   encode(pre_encode(Data2, Config), Config);
@@ -74,6 +74,9 @@ pre_encode(Data, Config) ->
     end,
     maps:new(),
     Data).
+
+merge_meta(Msg, Meta, _Config) ->
+  maps:merge(Msg, Meta).
 
 encode(Data, Config) ->
   Json = jsx:encode(Data),
