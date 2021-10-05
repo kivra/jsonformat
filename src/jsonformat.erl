@@ -23,7 +23,7 @@
 
 %%%_* Exports ==========================================================
 -export([format/2]).
--export([unix_to_iso8601/1]).
+-export([system_time_to_iso8601/1]).
 
 %%%_* Types ============================================================
 -type config() :: #{ new_line => boolean()
@@ -57,15 +57,14 @@ format(Map = #{msg := {Format, Terms}}, Config) ->
 format(Unknown, Config) ->
   erlang:display({Unknown, Config}).
 
+%%% Useful for converting logger:timestamp() to a readable timestamp.
+-spec system_time_to_iso8601(integer()) -> binary().
+system_time_to_iso8601(Epoch) ->
+  system_time_to_iso8601(Epoch, microsecond).
 
--spec unix_to_iso8601(integer()) -> binary().
-unix_to_iso8601(Epoch) ->
-  unix_to_iso8601(Epoch, microsecond).
-
--spec unix_to_iso8601(integer(), erlang:time_unit()) -> binary().
-unix_to_iso8601(Epoch, Unit) ->
-  DateTime = calendar:system_time_to_universal_time(Epoch, Unit),
-  iso8601:format(DateTime).
+-spec system_time_to_iso8601(integer(), erlang:time_unit()) -> binary().
+system_time_to_iso8601(Epoch, Unit) ->
+  calendar:system_time_to_rfc3339(Epoch, [{unit, Unit}]).
 
 %%%_* Private functions ================================================
 pre_encode(Data, Config) ->
