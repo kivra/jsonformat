@@ -23,6 +23,7 @@
 
 %%%_* Exports ==========================================================
 -export([format/2]).
+-export([system_time_to_iso8601/1]).
 
 %%%_* Types ============================================================
 -type config() :: #{ new_line => boolean()
@@ -53,6 +54,15 @@ format(Map = #{msg := {string, String}}, Config) ->
   format(Map#{msg := {report, Report}}, Config);
 format(Map = #{msg := {Format, Terms}}, Config) ->
   format(Map#{msg := {string, io_lib:format(Format, Terms)}}, Config).
+
+%%% Useful for converting logger:timestamp() to a readable timestamp.
+-spec system_time_to_iso8601(integer()) -> binary().
+system_time_to_iso8601(Epoch) ->
+  system_time_to_iso8601(Epoch, microsecond).
+
+-spec system_time_to_iso8601(integer(), erlang:time_unit()) -> binary().
+system_time_to_iso8601(Epoch, Unit) ->
+  binary:list_to_bin(calendar:system_time_to_rfc3339(Epoch, [{unit, Unit}, {offset, "Z"}])).
 
 %%%_* Private functions ================================================
 pre_encode(Data, Config) ->

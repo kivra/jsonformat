@@ -57,6 +57,12 @@ For example, to format the value associated with the `time` key, use:
 
 Note that `key_mapping`s are applied before `format_funs`.
 
+### Built in formatters
+
+    fun jsonformat:system_time_to_iso8601/1
+
+Will take a logger:timestamp() and print it in the format of yyyy-mm-ddTHH:MM:SSZ 
+
 ## Running the tests
 
 ```
