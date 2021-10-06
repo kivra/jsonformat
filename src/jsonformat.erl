@@ -62,7 +62,7 @@ system_time_to_iso8601(Epoch) ->
 
 -spec system_time_to_iso8601(integer(), erlang:time_unit()) -> binary().
 system_time_to_iso8601(Epoch, Unit) ->
-  calendar:system_time_to_rfc3339(Epoch, [{unit, Unit}, {offset, "Z"}]).
+  binary:list_to_bin(calendar:system_time_to_rfc3339(Epoch, [{unit, Unit}, {offset, "Z"}])).
 
 %%%_* Private functions ================================================
 pre_encode(Data, Config) ->
