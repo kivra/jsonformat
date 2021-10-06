@@ -43,7 +43,7 @@ format(#{msg:={report, #{format:=Format, args:=Args, label:={error_logger, _}}}}
   Report = #{text => io_lib:format(Format, Args)},
   format(Map#{msg := {report, Report}}, Config);
 format(#{level:=Level, msg:={report, Msg}, meta:=Meta}, Config) when is_map(Msg) ->
-  Data0 = maps:merge(Msg, Meta#{level => Level}),
+  Data0 = merge_meta(Msg, Meta#{level => Level}, Config),
   Data1 = apply_key_mapping(Data0, Config),
   Data2 = apply_format_funs(Data1, Config),
   encode(pre_encode(Data2, Config), Config);
@@ -74,6 +74,11 @@ pre_encode(Data, Config) ->
     end,
     maps:new(),
     Data).
+
+merge_meta(Msg, Meta0, Config) ->
+  Meta1 = meta_without(Meta0, Config),
+  Meta2 = meta_with(Meta1, Config),
+  maps:merge(Msg, Meta2).
 
 encode(Data, Config) ->
   Json = jsx:encode(Data),
@@ -120,6 +125,15 @@ apply_key_mapping(Data, _) ->
   Data.
 
 new_line(Config) -> maps:get(new_line, Config, ?NEW_LINE).
+
+meta_without(Meta, Config) ->
+    maps:without(maps:get(meta_without, Config, [report_cb]), Meta).
+
+meta_with(Meta, #{ meta_with := Ks}) ->
+    maps:with(Ks, Meta);
+meta_with(Meta, _ConfigNotPresent) ->
+    Meta.
+
 
 %%%_* Tests ============================================================
 -ifdef(TEST).
@@ -170,6 +184,38 @@ list_format_test() ->
           msg => {report,#{report => [{hej,"hopp"}]}}},
     ?assertEqual( <<"{\"level\":\"error\",\"report\":\"[{hej,\\\"hopp\\\"}]\",\"time\":1}">>
                 , format(ErrorReport, #{})).
+
+meta_without_test() ->
+    Error = #{ level => info
+             , msg => {report, #{answer => 42}}
+             , meta => #{secret => xyz}},
+    ?assertEqual([ {<<"answer">>, 42}
+                 , {<<"level">>, <<"info">>}
+                 , {<<"secret">>, <<"xyz">>}
+                 ],
+        jsx:decode(format(Error, #{}))),
+    Config2 = #{ meta_without => [secret]},
+    ?assertEqual([ {<<"answer">>, 42}
+                 , {<<"level">>, <<"info">>}
+                 ],
+        jsx:decode(format(Error, Config2))),
+    ok.
+
+meta_with_test() ->
+    Error = #{ level => info
+             , msg => {report, #{answer => 42}}
+             , meta => #{secret => xyz}},
+    ?assertEqual([ {<<"answer">>, 42}
+                 , {<<"level">>, <<"info">>}
+                 , {<<"secret">>, <<"xyz">>}
+                 ],
+        jsx:decode(format(Error, #{}))),
+    Config2 = #{ meta_with => [level]},
+    ?assertEqual([ {<<"answer">>, 42}
+                 , {<<"level">>, <<"info">>}
+                 ],
+        jsx:decode(format(Error, Config2))),
+    ok.
 
 -endif.
 
