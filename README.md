@@ -39,6 +39,15 @@ To print each json object to a new line, set `new_line` to `true`:
 #{formatter => {jsonformat, #{ new_line => true }}}
 ```
 
+To control what is being included in the log object from the metadata, there
+are two ways. One can opt-out from fields. Default opts out is `[report_cb]`.
+
+    #{ meta_without => [report_cb, gl, file, domain] }
+
+Or for very detailed control there is instead opt-in.
+
+    #{ meta_with => [time, mfa, line, user_key, client_key] }
+
 To rename keys in the resulting json object, provide a `key_mapping`. For
 example, to rename the `time` and `level` keys to `timestamp` and `lvl`
 respectively, use:
