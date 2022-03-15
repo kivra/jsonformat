@@ -63,7 +63,7 @@ system_time_to_iso8601(Epoch) ->
 
 -spec system_time_to_iso8601_nano(integer()) -> binary().
 system_time_to_iso8601_nano(Epoch) ->
-  system_time_to_iso8601(Epoch, nanosecond).
+  system_time_to_iso8601(1000 * Epoch, nanosecond).
 
 -spec system_time_to_iso8601(integer(), erlang:time_unit()) -> binary().
 system_time_to_iso8601(Epoch, Unit) ->
