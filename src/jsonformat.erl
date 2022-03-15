@@ -24,6 +24,7 @@
 %%%_* Exports ==========================================================
 -export([format/2]).
 -export([system_time_to_iso8601/1]).
+-export([system_time_to_iso8601_nano/1]).
 
 %%%_* Types ============================================================
 -type config() :: #{ new_line => boolean()
@@ -59,6 +60,10 @@ format(Map = #{msg := {Format, Terms}}, Config) ->
 -spec system_time_to_iso8601(integer()) -> binary().
 system_time_to_iso8601(Epoch) ->
   system_time_to_iso8601(Epoch, microsecond).
+
+-spec system_time_to_iso8601_nano(integer()) -> binary().
+system_time_to_iso8601_nano(Epoch) ->
+  system_time_to_iso8601(Epoch, nanosecond).
 
 -spec system_time_to_iso8601(integer(), erlang:time_unit()) -> binary().
 system_time_to_iso8601(Epoch, Unit) ->
