@@ -39,6 +39,20 @@ To print each json object to a new line, set `new_line` to `true`:
 #{formatter => {jsonformat, #{ new_line => true }}}
 ```
 
+To specify which kind of line ending to use, set `new_line_type` to
+one of `nl`, `crlf`, `cr`, `unix`, `windows` or `macos9`. These
+correspond to:
+
+ * `nl` or `unix` means `\n`, ASCII character 0x0A
+ * `crlf` or `windows` means `\r\n`, ASCII characters 0x0D 0x0A
+ * `cr` or `macos9` means `\r`, ASCII character 0x0D
+
+The default line ending if none is specified is `nl`.
+
+```erlang
+#{formatter => {jsonformat, #{ new_line => true, new_line_type => crlf }}}
+```
+
 To control what is being included in the log object from the metadata, there
 are two ways. One can opt-out from fields. Default opts out is `[report_cb]`.
 

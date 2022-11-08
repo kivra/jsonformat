@@ -28,6 +28,7 @@
 
 %%%_* Types ============================================================
 -type config() :: #{ new_line => boolean()
+                   , new_line_type => nl | crlf | cr | unix | windows | macos9
                    , key_mapping => #{atom() => atom()}
                    , format_funs => #{atom() => fun((_) -> _)}}.
 
@@ -90,7 +91,7 @@ merge_meta(Msg, Meta0, Config) ->
 encode(Data, Config) ->
   Json = jsx:encode(Data),
   case new_line(Config) of
-    true -> [Json, <<"\n">>];
+    true -> [Json, new_line_type(Config)];
     false -> Json
   end.
 
@@ -132,6 +133,14 @@ apply_key_mapping(Data, _) ->
   Data.
 
 new_line(Config) -> maps:get(new_line, Config, ?NEW_LINE).
+
+new_line_type(#{new_line_type := nl})      -> <<"\n">>;
+new_line_type(#{new_line_type := unix})    -> <<"\n">>;
+new_line_type(#{new_line_type := crlf})    -> <<"\r\n">>;
+new_line_type(#{new_line_type := windows}) -> <<"\r\n">>;
+new_line_type(#{new_line_type := cr})      -> <<"\r">>;
+new_line_type(#{new_line_type := macos9})  -> <<"\r">>;
+new_line_type(_Default)                    -> <<"\n">>.
 
 meta_without(Meta, Config) ->
     maps:without(maps:get(meta_without, Config, [report_cb]), Meta).
@@ -223,6 +232,16 @@ meta_with_test() ->
                  ],
         jsx:decode(format(Error, Config2))),
     ok.
+
+newline_test() ->
+    ConfigDefault = #{ new_line => true },
+    ?assertEqual( [<<"{\"level\":\"alert\",\"text\":\"derp\"}">>, <<"\n">>]
+                , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, ConfigDefault) ),
+    ConfigCRLF = #{ new_line_type => crlf
+                  , new_line => true
+                  },
+    ?assertEqual( [<<"{\"level\":\"alert\",\"text\":\"derp\"}">>, <<"\r\n">>]
+                , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, ConfigCRLF) ).
 
 -endif.
 
