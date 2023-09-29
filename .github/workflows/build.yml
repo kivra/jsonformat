@@ -27,6 +27,16 @@ jobs:
       run: make check-format
     - name: Run xref
       run: make xref
+    - name: Fetch PLT
+      uses: actions/cache@v3
+      id: cache-plt
+      with:
+        path: |
+          _build/default/*_plt
+        key: dialyzer-${{ github.ref_name }}-${{ matrix.otp }}
+        restore-keys: |
+          dialyzer-${{ github.event.repository.default_branch || 'master' }}-${{ matrix.otp }}
+          dialyzer-${{ github.event.repository.default_branch || 'master' }}-
     - name: Run dialyzer
       run: make dialyze
     - name: Run eunit tests
