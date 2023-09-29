@@ -155,42 +155,46 @@ meta_with(Meta, _ConfigNotPresent) ->
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
+-define(assertJSONEqual(Expected, Actual),
+  ?assertEqual(jsx:decode(Expected, [return_maps]), jsx:decode(Actual, [return_maps]))
+).
+
 format_test() ->
-  ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\"}">>
+  ?assertJSONEqual( <<"{\"level\":\"alert\",\"text\":\"derp\"}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{}) ),
-  ?assertEqual( <<"{\"herp\":\"derp\",\"level\":\"alert\"}">>
+  ?assertJSONEqual( <<"{\"herp\":\"derp\",\"level\":\"alert\"}">>
               , format(#{level => alert, msg => {report, #{herp => derp}}, meta => #{}}, #{}) ).
 
 format_funs_test() ->
   Config1 = #{format_funs => #{ time  => fun(Epoch) -> Epoch + 1 end
                               , level => fun(alert) -> info      end}},
-  ?assertEqual( <<"{\"level\":\"info\",\"text\":\"derp\",\"time\":2}">>
+  ?assertJSONEqual( <<"{\"level\":\"info\",\"text\":\"derp\",\"time\":2}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config1)),
 
   Config2 = #{format_funs => #{ time  => fun(Epoch) -> Epoch + 1 end
                               , foobar => fun(alert) -> info      end}},
-  ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\",\"time\":2}">>
+  ?assertJSONEqual( <<"{\"level\":\"alert\",\"text\":\"derp\",\"time\":2}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config2)).
 
 key_mapping_test() ->
   Config1 = #{key_mapping => #{ level => lvl
                               , text => message}},
-  ?assertEqual( <<"{\"lvl\":\"alert\",\"message\":\"derp\"}">>
+  ?assertJSONEqual( <<"{\"lvl\":\"alert\",\"message\":\"derp\"}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config1)),
 
   Config2 = #{key_mapping => #{ level => lvl
                               , text => level}},
-  ?assertEqual( <<"{\"level\":\"derp\",\"lvl\":\"alert\"}">>
+  ?assertJSONEqual( <<"{\"level\":\"derp\",\"lvl\":\"alert\"}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config2)),
 
   Config3 = #{key_mapping => #{ level => lvl
                               , foobar => level}},
-  ?assertEqual( <<"{\"lvl\":\"alert\",\"text\":\"derp\"}">>
+  ?assertJSONEqual( <<"{\"lvl\":\"alert\",\"text\":\"derp\"}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config3)),
 
   Config4 = #{ key_mapping => #{time => timestamp}
              , format_funs => #{timestamp => fun(T) -> T + 1 end}},
-  ?assertEqual( <<"{\"level\":\"alert\",\"text\":\"derp\",\"timestamp\":2}">>
+  ?assertJSONEqual( <<"{\"level\":\"alert\",\"text\":\"derp\",\"timestamp\":2}">>
               , format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config4)).
 
 list_format_test() ->
@@ -198,39 +202,39 @@ list_format_test() ->
         #{level => error,
           meta => #{time => 1},
           msg => {report,#{report => [{hej,"hopp"}]}}},
-    ?assertEqual( <<"{\"level\":\"error\",\"report\":\"[{hej,\\\"hopp\\\"}]\",\"time\":1}">>
+    ?assertJSONEqual( <<"{\"level\":\"error\",\"report\":\"[{hej,\\\"hopp\\\"}]\",\"time\":1}">>
                 , format(ErrorReport, #{})).
 
 meta_without_test() ->
     Error = #{ level => info
              , msg => {report, #{answer => 42}}
              , meta => #{secret => xyz}},
-    ?assertEqual([ {<<"answer">>, 42}
-                 , {<<"level">>, <<"info">>}
-                 , {<<"secret">>, <<"xyz">>}
-                 ],
-        jsx:decode(format(Error, #{}))),
+    ?assertEqual(#{ <<"answer">> => 42
+                 , <<"level">> => <<"info">>
+                 , <<"secret">> => <<"xyz">>
+                 },
+        jsx:decode(format(Error, #{}), [return_maps])),
     Config2 = #{ meta_without => [secret]},
-    ?assertEqual([ {<<"answer">>, 42}
-                 , {<<"level">>, <<"info">>}
-                 ],
-        jsx:decode(format(Error, Config2))),
+    ?assertEqual(#{ <<"answer">> => 42
+                 , <<"level">> => <<"info">>
+                 },
+        jsx:decode(format(Error, Config2), [return_maps])),
     ok.
 
 meta_with_test() ->
     Error = #{ level => info
              , msg => {report, #{answer => 42}}
              , meta => #{secret => xyz}},
-    ?assertEqual([ {<<"answer">>, 42}
-                 , {<<"level">>, <<"info">>}
-                 , {<<"secret">>, <<"xyz">>}
-                 ],
-        jsx:decode(format(Error, #{}))),
+    ?assertEqual(#{ <<"answer">> => 42
+                 , <<"level">> => <<"info">>
+                 , <<"secret">> => <<"xyz">>
+                 },
+        jsx:decode(format(Error, #{}), [return_maps])),
     Config2 = #{ meta_with => [level]},
-    ?assertEqual([ {<<"answer">>, 42}
-                 , {<<"level">>, <<"info">>}
-                 ],
-        jsx:decode(format(Error, Config2))),
+    ?assertEqual(#{ <<"answer">> => 42
+                 , <<"level">> => <<"info">>
+                 },
+        jsx:decode(format(Error, Config2), [return_maps])),
     ok.
 
 newline_test() ->
