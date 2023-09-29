@@ -23,6 +23,8 @@ jobs:
         rebar3-version: "3"
     - name: Compile
       run: make compile
+    - name: Check format
+      run: make check-format
     - name: Run xref
       run: make xref
     - name: Run dialyzer
