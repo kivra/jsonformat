@@ -248,11 +248,3 @@ newline_test() ->
                 , format(#{level => alert, msg => {string, "derp"}, meta => #{}}, ConfigCRLF) ).
 
 -endif.
-
-%%%_* Emacs ============================================================
-%%% Local Variables:
-%%% allout-layout: t
-%%% erlang-indent-level: 2
-%%% vim: sw=2 ts=2 et
-%%%
-%%% End:
