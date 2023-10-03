@@ -12,16 +12,18 @@
 %% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 %% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-{application, jsonformat,
-  [ {description,  "A custom formatter for the erlang logger applications that "
-                   "outputs JSON formatted single line logs"}
-  , {vsn,          git}
-  , {modules,      []}
-  , {registered,   []}
-  , {applications, [ kernel
-                   , stdlib
-                   , jsx
-                   ]}
-  , {licenses,     ["MIT"]}
-  , {links,        [{"Github", "https://github.com/kivra/jsonformat/"}]}
-  ]}.
+{application, jsonformat, [
+    {description,
+        "A custom formatter for the erlang logger applications that "
+        "outputs JSON formatted single line logs"},
+    {vsn, git},
+    {modules, []},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib,
+        jsx
+    ]},
+    {licenses, ["MIT"]},
+    {links, [{"Github", "https://github.com/kivra/jsonformat/"}]}
+]}.
