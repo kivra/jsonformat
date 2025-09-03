@@ -28,7 +28,7 @@ jobs:
     - name: Run xref
       run: make xref
     - name: Fetch PLT
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: cache-plt
       with:
         path: |
