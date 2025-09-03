@@ -96,7 +96,7 @@ merge_meta(Msg, Meta0, Config) ->
     maps:merge(Msg, Meta2).
 
 encode(Data, Config) ->
-    Json = jsx:encode(Data),
+    Json = json:encode(Data),
     case new_line(Config) of
         true -> [Json, new_line_type(Config)];
         false -> Json
@@ -174,17 +174,19 @@ meta_with(Meta, _ConfigNotPresent) ->
 -include_lib("eunit/include/eunit.hrl").
 
 -define(assertJSONEqual(Expected, Actual),
-    ?assertEqual(jsx:decode(Expected, [return_maps]), jsx:decode(Actual, [return_maps]))
+    ?assertEqual(json:decode(Expected), json:decode(Actual))
 ).
 
 format_test() ->
     ?assertJSONEqual(
         <<"{\"level\":\"alert\",\"text\":\"derp\"}">>,
-        format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{})
+        iolist_to_binary(format(#{level => alert, msg => {string, "derp"}, meta => #{}}, #{}))
     ),
     ?assertJSONEqual(
         <<"{\"herp\":\"derp\",\"level\":\"alert\"}">>,
-        format(#{level => alert, msg => {report, #{herp => derp}}, meta => #{}}, #{})
+        iolist_to_binary(
+            format(#{level => alert, msg => {report, #{herp => derp}}, meta => #{}}, #{})
+        )
     ).
 
 format_funs_test() ->
@@ -196,7 +198,9 @@ format_funs_test() ->
     },
     ?assertJSONEqual(
         <<"{\"level\":\"info\",\"text\":\"derp\",\"time\":2}">>,
-        format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config1)
+        iolist_to_binary(
+            format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config1)
+        )
     ),
 
     Config2 = #{
@@ -207,7 +211,9 @@ format_funs_test() ->
     },
     ?assertJSONEqual(
         <<"{\"level\":\"alert\",\"text\":\"derp\",\"time\":2}">>,
-        format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config2)
+        iolist_to_binary(
+            format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config2)
+        )
     ).
 
 key_mapping_test() ->
@@ -219,7 +225,7 @@ key_mapping_test() ->
     },
     ?assertJSONEqual(
         <<"{\"lvl\":\"alert\",\"message\":\"derp\"}">>,
-        format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config1)
+        iolist_to_binary(format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config1))
     ),
 
     Config2 = #{
@@ -230,7 +236,7 @@ key_mapping_test() ->
     },
     ?assertJSONEqual(
         <<"{\"level\":\"derp\",\"lvl\":\"alert\"}">>,
-        format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config2)
+        iolist_to_binary(format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config2))
     ),
 
     Config3 = #{
@@ -241,7 +247,7 @@ key_mapping_test() ->
     },
     ?assertJSONEqual(
         <<"{\"lvl\":\"alert\",\"text\":\"derp\"}">>,
-        format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config3)
+        iolist_to_binary(format(#{level => alert, msg => {string, "derp"}, meta => #{}}, Config3))
     ),
 
     Config4 = #{
@@ -250,7 +256,9 @@ key_mapping_test() ->
     },
     ?assertJSONEqual(
         <<"{\"level\":\"alert\",\"text\":\"derp\",\"timestamp\":2}">>,
-        format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config4)
+        iolist_to_binary(
+            format(#{level => alert, msg => {string, "derp"}, meta => #{time => 1}}, Config4)
+        )
     ).
 
 list_format_test() ->
@@ -262,7 +270,7 @@ list_format_test() ->
         },
     ?assertJSONEqual(
         <<"{\"level\":\"error\",\"report\":\"[{hej,\\\"hopp\\\"}]\",\"time\":1}">>,
-        format(ErrorReport, #{})
+        iolist_to_binary(format(ErrorReport, #{}))
     ).
 
 meta_without_test() ->
@@ -277,7 +285,7 @@ meta_without_test() ->
             <<"level">> => <<"info">>,
             <<"secret">> => <<"xyz">>
         },
-        jsx:decode(format(Error, #{}), [return_maps])
+        json:decode(iolist_to_binary(format(Error, #{})))
     ),
     Config2 = #{meta_without => [secret]},
     ?assertEqual(
@@ -285,7 +293,7 @@ meta_without_test() ->
             <<"answer">> => 42,
             <<"level">> => <<"info">>
         },
-        jsx:decode(format(Error, Config2), [return_maps])
+        json:decode(iolist_to_binary(format(Error, Config2)))
     ),
     ok.
 
@@ -301,7 +309,7 @@ meta_with_test() ->
             <<"level">> => <<"info">>,
             <<"secret">> => <<"xyz">>
         },
-        jsx:decode(format(Error, #{}), [return_maps])
+        json:decode(iolist_to_binary(format(Error, #{})))
     ),
     Config2 = #{meta_with => [level]},
     ?assertEqual(
@@ -309,23 +317,27 @@ meta_with_test() ->
             <<"answer">> => 42,
             <<"level">> => <<"info">>
         },
-        jsx:decode(format(Error, Config2), [return_maps])
+        json:decode(iolist_to_binary(format(Error, Config2)))
     ),
     ok.
 
 newline_test() ->
     ConfigDefault = #{new_line => true},
     ?assertEqual(
-        [<<"{\"level\":\"alert\",\"text\":\"derp\"}">>, <<"\n">>],
-        format(#{level => alert, msg => {string, "derp"}, meta => #{}}, ConfigDefault)
+        <<"{\"level\":\"alert\",\"text\":\"derp\"}\n">>,
+        iolist_to_binary(
+            format(#{level => alert, msg => {string, "derp"}, meta => #{}}, ConfigDefault)
+        )
     ),
     ConfigCRLF = #{
         new_line_type => crlf,
         new_line => true
     },
     ?assertEqual(
-        [<<"{\"level\":\"alert\",\"text\":\"derp\"}">>, <<"\r\n">>],
-        format(#{level => alert, msg => {string, "derp"}, meta => #{}}, ConfigCRLF)
+        <<"{\"level\":\"alert\",\"text\":\"derp\"}\r\n">>,
+        iolist_to_binary(
+            format(#{level => alert, msg => {string, "derp"}, meta => #{}}, ConfigCRLF)
+        )
     ).
 
 -endif.
