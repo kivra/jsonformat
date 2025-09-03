@@ -12,7 +12,7 @@ jobs:
     name: OTP ${{matrix.otp}}
     strategy:
       matrix:
-        otp: ["24", "25", "26"]
+        otp: ["27", "28"]
       fail-fast: false
     steps:
     - uses: actions/checkout@v4
