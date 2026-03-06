@@ -103,7 +103,16 @@ encode(Data, Config) ->
     end.
 
 jsonify(A) when is_atom(A) -> A;
-jsonify(B) when is_binary(B) -> B;
+jsonify(B) when is_binary(B) ->
+    try
+        json:encode(B),
+        B
+    catch
+        error:{invalid_byte, _} ->
+            print_term_to_binary(B);
+        error:unexpected_end ->
+            print_term_to_binary(B)
+    end;
 jsonify(I) when is_integer(I) -> I;
 jsonify(F) when is_float(F) -> F;
 jsonify(B) when is_boolean(B) -> B;
@@ -111,16 +120,25 @@ jsonify(P) when is_pid(P) -> jsonify(pid_to_list(P));
 jsonify(P) when is_port(P) -> jsonify(port_to_list(P));
 jsonify(F) when is_function(F) -> jsonify(erlang:fun_to_list(F));
 jsonify(L) when is_list(L) ->
-    try list_to_binary(L) of
-        S -> S
+    try
+        S = list_to_binary(L),
+        json:encode(S),
+        S
     catch
+        error:{invalid_byte, _} ->
+            print_term_to_binary(L);
+        error:unexpected_end ->
+            print_term_to_binary(L);
         error:badarg ->
-            unicode:characters_to_binary(io_lib:format("~0p", [L]))
+            print_term_to_binary(L)
     end;
 jsonify({M, F, A}) when is_atom(M), is_atom(F), is_integer(A) ->
     <<(a2b(M))/binary, $:, (a2b(F))/binary, $/, (integer_to_binary(A))/binary>>;
 jsonify(Any) ->
-    unicode:characters_to_binary(io_lib:format("~0p", [Any])).
+    print_term_to_binary(Any).
+
+print_term_to_binary(B) ->
+    unicode:characters_to_binary(io_lib:format("~0p", [B])).
 
 a2b(A) -> atom_to_binary(A, utf8).
 
@@ -340,4 +358,33 @@ newline_test() ->
         )
     ).
 
+non_utf8_binary_test() ->
+    ?assertJSONEqual(
+        <<"{\"binary_non_utf8\":\"<<97,98,99,128>>\",\"level\":\"alert\"}">>,
+        iolist_to_binary(
+            format(
+                #{
+                    level => alert,
+                    msg => {report, #{binary_non_utf8 => <<97, 98, 99, 128>>}},
+                    meta => #{}
+                },
+                #{}
+            )
+        )
+    ).
+
+non_utf8_list_test() ->
+    ?assertJSONEqual(
+        <<"{\"list\":\"[1,2,128]\",\"level\":\"alert\"}">>,
+        iolist_to_binary(
+            format(
+                #{
+                    level => alert,
+                    msg => {report, #{list => [1, 2, 128]}},
+                    meta => #{}
+                },
+                #{}
+            )
+        )
+    ).
 -endif.
